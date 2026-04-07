@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ShopSwift - المتجر الذكي</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; transition: 0.3s; }
+        /* القائمة الجانبية */
+        .sidebar { position: fixed; top: 0; left: -300px; width: 300px; height: 100%; background: white; 
+                    transition: 0.3s; box-shadow: 2px 0 5px rgba(0,0,0,0.3); z-index: 1000; overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .sidebar.ltr { left: auto; right: -300px; }
+        .sidebar.ltr.active { right: 0; }
+        
+        .section-title { padding: 15px; background: #f3f3f3; font-weight: bold; }
+        .item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .item:hover { background: #eee; }
+
+        /* الهيدر والأزرار */
+        .header { background: #232f3e; color: white; padding: 10px; display: flex; align-items: center; justify-content: space-between; }
+        .menu-btn { font-size: 20px; background: none; border: none; color: white; cursor: pointer; }
+        
+        /* شريط التنقل السفلي */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #111; display: flex; 
+                      justify-content: space-around; color: white; padding: 15px 0; font-size: 14px; }
+        
+        .container { padding: 20px; text-align: center; margin-bottom: 100px; }
+        .btn-action { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <button class="menu-btn" onclick="toggleMenu()">☰ <span data-key="menu">القائمة</span></button>
+        <div style="display:flex; align-items:center;">
+            <img src="logo.png" style="width:30px; border-radius:50%; margin:0 10px;">
+            <span id="logoText">ShopSwift</span>
+        </div>
+        <select onchange="setLang(this.value)" style="padding:5px;">
+            <option value="ar">العربية</option>
+            <option value="en">English</option>
+        </select>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <div class="item" style="text-align:end; font-size:20px;" onclick="toggleMenu()">✖</div>
+        <div class="section-title" data-key="popular">الأكثر شيوعاً</div>
+        <div class="item" data-key="bestSellers">الأكثر مبيعاً</div>
+        <div class="section-title" data-key="settings">الإعدادات</div>
+        <div class="item" onclick="adminAccess()" data-key="admin">لوحة الأدمن</div>
+    </div>
+
+    <div class="container">
+        <h1 id="title" data-key="welcome">مرحباً بك في شوب سويفت</h1>
+        <div id="products-list">
+            </div>
+        <button class="btn-action" onclick="orderNow()" data-key="buy">إتمام الشراء</button>
+        <div id="orderMsg" style="display:none; background:#e6ffed; padding:15px; margin-top:20px; border:1px solid #28a745;"></div>
+    </div>
+
+    <nav class="bottom-nav" id="bottomNav">
+        <div data-key="home">الرئيسية</div>
+        <div data-key="account">حسابك</div>
+        <div data-key="cart">العربة</div>
+    </nav>
+
+    <script>
+        const translations = {
+            ar: { menu: "القائمة", popular: "الأكثر شيوعاً", bestSellers: "الأكثر مبيعاً", settings: "الإعدادات", admin: "لوحة الأدمن", welcome: "مرحباً بك في شوب سويفت", buy: "إتمام الشراء", home: "الرئيسية", account: "حسابك", cart: "العربة" },
+            en: { menu: "Menu", popular: "Popular", bestSellers: "Best Sellers", settings: "Settings", admin: "Admin Panel", welcome: "Welcome to ShopSwift", buy: "Checkout", home: "Home", account: "Account", cart: "Cart" }
+        };
+
+        function toggleMenu() {
+            document.getElementById("sidebar").classList.toggle("active");
+        }
+
+        function setLang(lang) {
+            localStorage.setItem("lang", lang);
+            document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+            document.documentElement.lang = lang;
+            
+            // تحديث النصوص
+            document.querySelectorAll("[data-key]").forEach(el => {
+                el.innerText = translations[lang][el.dataset.key];
+            });
+
+            // تحديث تصميم القائمة الجانبية بناءً على اللغة
+            const sidebar = document.getElementById("sidebar");
+            if(lang === 'en') sidebar.classList.add('ltr'); else sidebar.classList.remove('ltr');
+            
+            document.getElementById("logoText").innerText = lang === "ar" ? "شوب سويفت" : "ShopSwift";
+        }
+
+        function orderNow() {
+            const msg = document.getElementById("orderMsg");
+            msg.innerHTML = "✅ تم استلام طلبك! <br> 🚚 التوصيل خلال 3 أيام";
+            msg.style.display = "block";
+            alert("تم تأكيد الطلب!");
+        }
+
+        function adminAccess() {
+            let pass = prompt("كلمة مرور المسؤول:");
+            if (pass === "1234") alert("مرحباً أيها المسؤول"); else alert("خطأ!");
+        }
+
+        window.onload = () => {
+            let lang = localStorage.getItem("lang") || "ar";
+            setLang(lang);
+        };
+    </script>
+</body>
+</html>
+
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import Stripe from "stripe";
+
+const app = express();
+const stripe = new Stripe("YOUR_STRIPE_SECRET_KEY");
+
+app.use(cors());
+app.use(express.json());
+
+// الاتصال بقاعدة البيانات
+mongoose.connect("mongodb://127.0.0.1:27017/shopswift");
+
+// ===== الموديلات (Models) =====
+const Product = mongoose.model("Product", {
+    name: String,
+    price: Number,
+    image: String,
+    category: String,
+    nonReturnable: Boolean
+});
+
+const User = mongoose.model("User", {
+    email: String,
+    password: String
+});
+
+// ===== المسارات (Routes) =====
+
+// جلب المنتجات
+app.get("/api/products", async (req, res) => {
+    const products = await Product.find();
+    res.json(products);
+});
+
+// الدفع عبر Stripe
+app.post("/api/checkout", async (req, res) => {
+    try {
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ["card"],
+            line_items: req.body.items.map(item => ({
+                price_data: {
+                    currency: "aed",
+                    product_data: { name: item.name },
+                    unit_amount: item.price * 100,
+                },
+                quantity: item.qty,
+            })),
+            mode: "payment",
+            success_url: "http://localhost:3000/success",
+            cancel_url: "http://localhost:3000/cancel",
+        });
+        res.json({ url: session.url });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.listen(5000, () => console.log("🚀 Server running on port 5000"));
+
+<div class="product-card" style="border:1px solid #ddd; padding:20px; max-width:400px; margin:auto;">
+    <img id="mainImg" src="product.jpg" style="width:100%; border-radius:10px;">
+    
+    <div class="thumbnails" style="display:flex; gap:10px; margin-top:10px;">
+        <img src="img1.jpg" width="50" onclick="document.getElementById('mainImg').src=this.src">
+        <img src="img2.jpg" width="50" onclick="document.getElementById('mainImg').src=this.src">
+    </div>
+
+    <h2>حذاء جري احترافي</h2>
+    <p style="color:red; font-size:12px;">❗ هذا المنتج غير قابل للإرجاع</p>
+
+    <div id="ratingSection">
+        <span class="star" onclick="rate(1)" style="cursor:pointer; font-size:25px;">☆</span>
+        <span class="star" onclick="rate(2)" style="cursor:pointer; font-size:25px;">☆</span>
+        <span class="star" onclick="rate(3)" style="cursor:pointer; font-size:25px;">☆</span>
+        <span class="star" onclick="rate(4)" style="cursor:pointer; font-size:25px;">☆</span>
+        <span class="star" onclick="rate(5)" style="cursor:pointer; font-size:25px;">☆</span>
+    </div>
+    <p id="rateStatus">لم يتم التقييم بعد</p>
+
+    <button class="btn-action" onclick="addToCart()">🛒 إضافة للسلة</button>
+</div>
+
+<script>
+    function rate(n) {
+        const stars = document.querySelectorAll('.star');
+        stars.forEach((s, i) => {
+            s.innerText = i < n ? "★" : "☆";
+            s.style.color = i < n ? "gold" : "black";
+        });
+        document.getElementById("rateStatus").innerText = `تقييمك: ${n} نجوم`;
+    }
+
+    function addToCart() {
+        alert("تمت الإضافة للسلة بنجاح!");
+    }
+</script>
